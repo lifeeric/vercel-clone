@@ -173,3 +173,16 @@ dist
 
 # Finder (MacOS) folder config
 .DS_Store
+
+# Ignore Terraform files
+# Ignore Terraform configuration files
+*.tf
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+
+# Ignore Terraform directories
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup

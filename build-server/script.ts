@@ -1,5 +1,6 @@
 /** @format */
 
+import { Redis } from "ioredis";
 import { Dirent } from "node:fs";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
@@ -27,6 +28,11 @@ const s3 = new S3Client({
 
 const PROJECT_ID: string = process.env.PROJECT_ID!;
 
+const publisher = new Redis(process.env.REDIS_URL!);
+const logger = (log: string): void => {
+  publisher.publish(`logs:${PROJECT_ID}`, JSON.stringify({ log }));
+};
+
 /**
  * Uploads a single files to S3
  *
@@ -43,6 +49,7 @@ const uploadFile = async (fullPath: string, name: string): Promise<void> => {
 
   try {
     console.log("[Uploading]", name);
+    logger(`[Uploading] ${name}`);
 
     const commandInput: PutObjectCommandInput = {
       Bucket: "hostify-output-projects",
@@ -55,8 +62,10 @@ const uploadFile = async (fullPath: string, name: string): Promise<void> => {
 
     await s3.send(command);
     console.log("[UPLOADED] ✅", fullPath);
+    logger(`[UPLOADED] ✅: ${fullPath}`);
   } catch (error) {
     console.log("[🔴] ERROR:", error);
+    logger(`[🔴] ERROR ${error}`);
   }
 };
 
@@ -85,6 +94,7 @@ const distDirPath: string = path.join(__dirname, "output", "dist");
 
 (async (): Promise<void> => {
   console.log(`[⌛️] Creating build...`);
+  logger(`[⌛️] Creating build...`);
 
   const outDirPath: string = path.join(__dirname, "output");
   const execPromisify: PromisifiedExecType = promisify(exec);
@@ -94,6 +104,7 @@ const distDirPath: string = path.join(__dirname, "output", "dist");
 
   if (stderr) {
     console.log(`[❌] ERROR: ${stderr}`);
+    logger(`[❌] ERROR: ${stderr}`);
   }
 
   if (stdout) {
@@ -101,8 +112,10 @@ const distDirPath: string = path.join(__dirname, "output", "dist");
   }
 
   console.log("[DONE] Build Complete 🎉");
+  logger(`[DONE] Build Complete 🎉`);
 
   await processDirectory(distDirPath);
 
-  console.log("[FINISH] 🎉");
+  console.log("[FINISH] ");
+  logger(`[FINISH] 🎉`);
 })();
